@@ -32,6 +32,7 @@ local NAV = {
     { link = "collections", icon = "folder-open", label = function() return _("Collections") end, count = "collections" },
     { link = "scopes", icon = "aperture", label = function() return _("SmartScopes") end, count = "scopes" },
     { link = "device", icon = "tablet", label = function() return _("On device") end, count = "device" },
+    { link = "requests", icon = "book-plus", label = function() return _("Requests") end },
 }
 
 -- Which Go to entry the catalog is showing, so the sheet can mark it.
@@ -68,6 +69,7 @@ function MenuSheet.data(plugin, catalog)
         online = NetworkMgr:isConnected(),
         synced = last_sync.event ~= "connection_test" and MenuUI.ago(last_sync.at, now) or nil,
         signed_in = plugin:isLoggedIn(),
+        request_access = plugin:isLoggedIn() and body.bookRequestAccess == true,
         sync_error = last_error.event ~= "connection_test" and (tonumber(last_error.at) or 0) > (last_sync.event ~= "connection_test" and tonumber(last_sync.at) or 0),
         waiting = (outbox.count or 0) + (coordinator.pending_count or 0),
         clock = datetime.secondsToHour(now, G_reader_settings:isTrue("twelve_hour_clock")),
@@ -103,17 +105,21 @@ local function tile(w, h, glyph, label, sub, action, data)
     return BoardUI.hit(MenuUI.card(w, { inner }, { pad = 14 }), action)
 end
 
-local function navGrid(w, d, ncols)
+local function navGrid(w, d, ncols, compact)
+    local nav = {}
+    for _, entry in ipairs(NAV) do
+        if entry.link ~= "requests" or d.request_access then table.insert(nav, entry) end
+    end
     local pad = px(16)
     local iw = w - 2 * pad
     local gap = px(24)
     local cw = math.floor((iw - (ncols - 1) * gap) / ncols)
-    local rh = px(50)
+    local rh = px(compact and 44 or 50)
     local rows = {}
-    for start = 1, #NAV, ncols do
+    for start = 1, #nav, ncols do
         local cells = {}
-        for index = start, math.min(#NAV, start + ncols - 1) do
-            local entry = NAV[index]
+        for index = start, math.min(#nav, start + ncols - 1) do
+            local entry = nav[index]
             local here = d.place == entry.link or (d.place == "shelves" and (entry.link == "collections" or entry.link == "scopes"))
             local count = d.counts[entry.count]
             local right = here and MenuUI.chip(_("Here"), { h = 22 })
@@ -261,9 +267,9 @@ function MenuSheet.body(d, w, o)
         tiles,
         file_browser and space(nil, px(10)) or false,
         file_browser or false,
-        space(nil, px(16)),
+        space(nil, px(o.compact and 8 or 16)),
         o.side_rows and hstack({ w = w, gap = px(20), valign = "top" }, {
-            MenuUI.section(nav_w, _("Go to"), navGrid(nav_w, d, 2)),
+            MenuUI.section(nav_w, _("Go to"), navGrid(nav_w, d, 2, o.compact)),
             -- Level with the Go to grid under its label.
             vstack({ w = rows_w }, { space(nil, MenuUI.label(rows_w, _("Go to")):getSize().h + px(8)), MenuUI.group(rows_w, rows) }),
         }) or MenuUI.section(w, _("Go to"), navGrid(w, d, o.cols or 2)),
@@ -279,9 +285,9 @@ local function build(page, sw, sh)
     if MenuUI.wide() then
         local pw = math.min(px(MenuUI.landscape() and 620 or 460), sw - 2 * mx)
         local pad = px(18)
-        local function contentFor(width, side_rows)
-            return vstack({ w = width - 2 * MenuUI.line(), pad = { px(4), pad - MenuUI.line(), pad, pad - MenuUI.line() } },
-                MenuSheet.body(d, width - 2 * pad, { popover = true, cols = MenuUI.landscape() and 3 or 2, side_rows = side_rows }))
+        local function contentFor(width, side_rows, compact)
+            return vstack({ w = width - 2 * MenuUI.line(), pad = { px(4), pad - MenuUI.line(), compact and px(8) or pad, pad - MenuUI.line() } },
+                MenuSheet.body(d, width - 2 * pad, { popover = true, cols = MenuUI.landscape() and 3 or 2, side_rows = side_rows, compact = compact }))
         end
         local mark = BoardUI.hitMark()
         local content = contentFor(pw, false)
@@ -291,6 +297,11 @@ local function build(page, sw, sh)
             BoardUI.hitTrim(mark)
             pw = math.min(math.floor(pw * 1.5 + 0.5), sw - 2 * mx)
             content = contentFor(pw, true)
+        end
+        if content:getSize().h + 2 * MenuUI.line() > sh - px(16) and MenuUI.landscape() then
+            content:free()
+            BoardUI.hitTrim(mark)
+            content = contentFor(pw, true, true)
         end
         local ph = content:getSize().h + 2 * MenuUI.line()
         local panel = BoardUI.box({ w = pw, h = ph, radius = px(16), border = math.max(1, px(1.5)), border_col = INK.black, bg = INK.white }, content)
@@ -302,7 +313,13 @@ local function build(page, sw, sh)
         return BoardUI.overlay(sw, sh, { { widget = panel, x = x, y = y } })
     end
     local w = sw - 2 * mx
+    local mark = BoardUI.hitMark()
     local content = vstack({ w = sw, pad = { px(6), mx, px(18), mx } }, MenuSheet.body(d, w))
+    if content:getSize().h > sh then
+        content:free()
+        BoardUI.hitTrim(mark)
+        content = vstack({ w = sw, pad = { px(6), mx, px(18), mx } }, MenuSheet.body(d, w, { cols = 3 }))
+    end
     local ph = content:getSize().h
     local line = math.max(1, px(1.5))
     local r = px(16)

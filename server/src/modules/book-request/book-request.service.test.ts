@@ -197,6 +197,49 @@ function makeService(
 
 const dto = { title: 'Dune', mediaKind: 'ebook' as const, authors: ['Frank Herbert'] };
 
+describe('BookRequestService requester libraries', () => {
+  it('returns only accessible ids and names in library order without fetching book counts or folders', async () => {
+    const findAll = vi.fn();
+    const findAccessibleLibraryIds = vi.fn().mockResolvedValue([2, 1]);
+    const findLibraryNames = vi.fn().mockResolvedValue(
+      new Map([
+        [1, 'Books'],
+        [2, 'Audio'],
+        [99, 'Private'],
+      ]),
+    );
+    const { service } = makeService({ libraryService: { findAll, findAccessibleLibraryIds }, repo: { findLibraryNames } });
+    const reader = user();
+    await expect(service.getRequesterLibraries(reader)).resolves.toEqual([
+      { id: 2, name: 'Audio' },
+      { id: 1, name: 'Books' },
+    ]);
+    expect(findAccessibleLibraryIds).toHaveBeenCalledWith(reader);
+    expect(findLibraryNames).toHaveBeenCalledWith([2, 1]);
+    expect(findAll).not.toHaveBeenCalled();
+  });
+
+  it('omits a library deleted after accessible ids were read', async () => {
+    const { service } = makeService({
+      libraryService: { findAccessibleLibraryIds: vi.fn().mockResolvedValue([2, 1]) },
+      repo: { findLibraryNames: vi.fn().mockResolvedValue(new Map([[1, 'Books']])) },
+    });
+    await expect(service.getRequesterLibraries(user())).resolves.toEqual([{ id: 1, name: 'Books' }]);
+  });
+
+  it('returns no destinations when the user has no library access', async () => {
+    const findAll = vi.fn();
+    const findLibraryNames = vi.fn().mockResolvedValue(new Map());
+    const { service } = makeService({
+      libraryService: { findAll, findAccessibleLibraryIds: vi.fn().mockResolvedValue([]) },
+      repo: { findLibraryNames },
+    });
+    await expect(service.getRequesterLibraries(user())).resolves.toEqual([]);
+    expect(findLibraryNames).toHaveBeenCalledWith([]);
+    expect(findAll).not.toHaveBeenCalled();
+  });
+});
+
 describe('BookRequestService.submit', () => {
   it('creates a pending request and notifies approvers', async () => {
     const { service, repo, notifications } = makeService();

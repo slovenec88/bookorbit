@@ -509,6 +509,7 @@ export interface KoreaderAchievementSummary {
 
 export interface KoreaderCatalogDashboardResponse {
   generatedAt: string;
+  bookRequestAccess?: boolean;
   username: string;
   displayName: string;
   totalBooks: number;

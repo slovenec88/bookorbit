@@ -517,4 +517,74 @@ assertEqual(http_client:getProxy(), nil,
 
 G_reader_settings = nil
 
+local wire_calls = {}
+local wire_client = BookOrbitApi.new{ server_url = "https://books.test/api/v1", username = "me", userkey = "secret" }
+wire_client.request = function(_, method, path, body)
+    table.insert(wire_calls, { method = method, path = path, body = body })
+    return {}
+end
+wire_client:requestAccess()
+assertEqual(wire_calls[1].method, "GET", "request access uses GET")
+assertEqual(wire_calls[1].path, "/koreader/plugin/requests/access", "request access path")
+local wire_payload = { title = "A Book", authors = { "An Author" }, mediaKind = "audiobook", language = "en", note = "Please", targetLibraryId = 3 }
+wire_client:submitBookRequest(wire_payload)
+assertEqual(wire_calls[2].method, "POST", "submission uses POST")
+assertEqual(wire_calls[2].path, "/koreader/plugin/requests", "submission path")
+assert(wire_calls[2].body == wire_payload, "submission preserves the validated payload")
+wire_client:myBookRequests{ page = 2, limit = 3, mediaKind = "audiobook", sortBy = "createdAt", sortDir = "desc" }
+assertEqual(wire_calls[3].method, "GET", "personal list uses GET")
+for _, pair in ipairs({ "page=2", "limit=3", "mediaKind=audiobook", "sortBy=createdAt", "sortDir=desc" }) do
+    assert(wire_calls[3].path:find(pair, 1, true), "personal list carries " .. pair)
+end
+wire_client:bookRequest(9)
+assertEqual(wire_calls[4].method, "GET", "detail uses GET")
+assertEqual(wire_calls[4].path, "/koreader/plugin/requests/9", "detail path")
+wire_client:cancelBookRequest(9)
+assertEqual(wire_calls[5].method, "POST", "cancellation uses POST")
+assertEqual(wire_calls[5].path, "/koreader/plugin/requests/9/cancel", "cancellation path")
+wire_client:leaveBookRequest(9)
+assertEqual(wire_calls[6].method, "DELETE", "leaving uses DELETE")
+assertEqual(wire_calls[6].path, "/koreader/plugin/requests/9/subscription", "unsubscribe path")
+local wire_pair = { title = "A Book", authors = { "An Author" }, ebook = { targetLibraryId = 3 }, audiobook = { targetLibraryId = 4 } }
+wire_client:submitBookRequestPair(wire_pair)
+assertEqual(wire_calls[7].method, "POST", "pair submission uses POST")
+assertEqual(wire_calls[7].path, "/koreader/plugin/requests/pairs", "pair submission path")
+assert(wire_calls[7].body == wire_pair, "pair payload preserves both destination halves")
+
+wire_client:requestReleases(9, false)
+assertEqual(wire_calls[8].method, "GET", "release search uses GET")
+assert(wire_calls[8].path:find("/koreader/plugin/requests/9/releases?", 1, true))
+assert(wire_calls[8].path:find("refresh=false", 1, true))
+wire_client:requestReleases(9, true)
+assert(wire_calls[9].path:find("refresh=true", 1, true))
+wire_client:searchBookRequestReleases(9, { title = "Book", authors = {}, preferredFormats = {}, isbn = "", language = "" })
+assertEqual(wire_calls[10].method, "POST", "custom search uses POST")
+assertEqual(wire_calls[10].path, "/koreader/plugin/requests/9/releases/search", "custom search path")
+assert(wire_calls[10].body.isbn == rapidjson_null and wire_calls[10].body.language == rapidjson_null,
+    "cleared ISBN/language are explicit JSON null, not the previous request filters")
+wire_client:inspectBookRequestRelease(9, 3, "guid")
+assertEqual(wire_calls[11].path, "/koreader/plugin/requests/9/releases/inspect", "inspection path")
+assertEqual(wire_calls[11].body.indexerId, 3, "inspection uses a source ID")
+assertEqual(wire_calls[11].body.releaseGuid, "guid", "inspection uses a GUID, not a download URL")
+wire_client:requestDownloadClients(9)
+assertEqual(wire_calls[12].method, "GET", "client choices use GET")
+assertEqual(wire_calls[12].path, "/koreader/plugin/requests/9/download-clients", "scoped client choices")
+local grab_payload = { indexerId = 3, releaseGuid = "guid", downloadClientId = 7, holdForReview = true }
+wire_client:grabBookRequestRelease(9, grab_payload)
+assertEqual(wire_calls[13].path, "/koreader/plugin/requests/9/grab", "grab path")
+assert(wire_calls[13].body == grab_payload)
+wire_client:bookRequestReview(9)
+assertEqual(wire_calls[14].method, "GET", "review uses GET")
+assertEqual(wire_calls[14].path, "/koreader/plugin/requests/9/review", "review path")
+wire_client:fileBookRequestImport(9)
+assertEqual(wire_calls[15].path, "/koreader/plugin/requests/9/force-file", "file import path")
+wire_client:discardBookRequestImport(9)
+assertEqual(wire_calls[16].path, "/koreader/plugin/requests/9/discard-import", "discard import path")
+wire_client:selectBookRequestUnit(9, 20, 0)
+assertEqual(wire_calls[17].path, "/koreader/plugin/requests/9/downloads/20/select-unit", "unit selection path")
+assertEqual(wire_calls[17].body.unitIndex, 0, "unit index zero is retained")
+wire_client:cancelBookRequestDownload(9, 20)
+assertEqual(wire_calls[18].path, "/koreader/plugin/requests/9/downloads/20/cancel", "stop transfer path")
+for index = 15, 18 do assertEqual(wire_calls[index].method, "POST", "workflow actions use POST") end
+
 print("bookorbit_api_test.lua: ok")

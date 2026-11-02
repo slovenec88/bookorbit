@@ -10,7 +10,7 @@ import { createReadStream } from 'fs';
 import { join } from 'path';
 import { stat } from 'fs/promises';
 import { BadRequestException, ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { DEFAULT_KOREADER_DEVICE_PATTERN } from '@bookorbit/types';
+import { DEFAULT_KOREADER_DEVICE_PATTERN, Permission } from '@bookorbit/types';
 import type { MockedFunction } from 'vitest';
 
 import { formatSeriesIndex } from '../../common/utils/series-index-format.utils';
@@ -370,6 +370,16 @@ function makeService(
 }
 
 describe('KoreaderCatalogService', () => {
+  it.each([
+    { isSuperuser: false, permissions: [], allowed: false },
+    { isSuperuser: false, permissions: [Permission.BookRequestAccess], allowed: true },
+    { isSuperuser: true, permissions: [], allowed: true },
+    { isSuperuser: false, permissions: [Permission.ManageBookRequests], allowed: false },
+  ])('reports request access for the current user: %j', async ({ isSuperuser, permissions, allowed }) => {
+    const { service } = makeService();
+    const dashboard = await service.getDashboard(makeUser({ isSuperuser, permissions }));
+    expect(dashboard.bookRequestAccess).toBe(allowed);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mockStat.mockResolvedValue({ size: 1234, mtimeMs: 5000 } as never);

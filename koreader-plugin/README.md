@@ -7,6 +7,23 @@ Syncs your KOReader reading life into BookOrbit:
 - **Reading statistics**: uploads KOReader's per-page time events; BookOrbit turns them into reading sessions and daily stats.
 - **Two-way highlights**: device highlights appear as native highlights on the web reader; highlights, edits and deletions made on the web come back to the device.
 - **Status & ratings**: reading/complete/abandoned status and star ratings sync both ways, newest-change-wins.
+- **Requests**: request an ebook or audiobook by title and author, optionally add language, a note and destination library, and follow its approval and fulfilment in My requests. Refresh for current status, cancel your own request, leave a joined request, or open an available ebook in the library. Available audiobooks can be played in BookOrbit on the web or in the app.
+
+## Requests
+
+Install both the updated server and plugin. Open BookOrbit, then its three-line menu > Go to > Requests > New request. Your BookOrbit account needs both KOReader sync and Book requests permissions. Enter a title, choose Ebook, Audiobook or Both, fill in the other details as needed, then submit and confirm. Both uses the server's paired-request submission and returns to My requests, with one entry per format so each can be tracked and cancelled separately. Destination library can use the server's defaults for each format; selecting a library explicitly sends both formats there. Auto-approved requests need a destination, so select a library if no default is configured. Audio-only libraries remain selectable.
+
+The Requests menu entry is shown only when the signed-in user's Home data confirms Book requests access. It stays hidden while access is unknown or denied; refreshing Home picks up permission changes. Opening the menu does not make a network request. The server still checks current permissions on every request, including when a cached menu is stale.
+
+My requests includes requests you created and joined, with type filters and server pagination. Open a request for its latest status, decision and failure reason. The refresh button updates status on demand. Submission reuses the web app's deduplication, approval, limits, download automation and ownership checks. Request approval and fulfilment settings remain in the web app. This build uses manual title/author entry; provider metadata search is not included.
+
+Users allowed to manage or fulfil a request can open **Find releases** from its details. Search uses the same configured sources and ranking as the web client. Edit title, authors, ISBN, language or formats; filter by format, source or language, and sort by rank, seeders, size or date. Each release exposes its reported formats, size, seeders/leechers, source, language, freeleech/VIP flags, audio information and file inspection. Missing counts remain distinct from zero. Searches and inspections run on demand, and long results and file lists are paged.
+
+Inspect a release, choose a compatible download client or the server default, and confirm **Download this release**. Files without a supported book are blocked. Self-fulfilment users submit with **Request & choose release**, which keeps that choice manual rather than handing it to automation. Both still creates two independently selectable requests. **Download & review** shows progress and errors, stops an active transfer, selects a book from a multi-book release, or files/discards a held import after confirmation. These controls reuse the server's existing permissions and ownership rules; requesting permission alone does not grant release access.
+
+Destination choices are paged for accounts with many libraries. Failed filter loads keep the previous filter and results, and requests can be submitted only after the server confirms access.
+
+Requests uses Lucide's book-plus icon, matching the web client. Action buttons have scaled 8-pixel vertical gaps and 12-pixel horizontal gaps, with space around the release toolbar, review controls and pagers.
 
 Only books BookOrbit already knows about are synced, matched by the same partial-MD5 file hash KOReader uses internally. Unmatched books on the device are re-checked automatically as your library changes.
 

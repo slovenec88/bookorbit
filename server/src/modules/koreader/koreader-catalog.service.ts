@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
-import { appendToPathStem, DEFAULT_KOREADER_DEVICE_PATTERN, resolveUploadPath } from '@bookorbit/types';
+import { appendToPathStem, DEFAULT_KOREADER_DEVICE_PATTERN, Permission, resolveUploadPath } from '@bookorbit/types';
 import { buildPatternTokens } from '../../common/utils/pattern-tokens.utils';
 import type {
   AchievementItem,
@@ -277,6 +277,7 @@ export class KoreaderCatalogService {
 
     return {
       generatedAt: new Date().toISOString(),
+      bookRequestAccess: user.isSuperuser || user.permissions.includes(Permission.BookRequestAccess),
       username: user.username,
       displayName: user.name || user.username,
       totalBooks,

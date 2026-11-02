@@ -680,6 +680,77 @@ function BookOrbitApi:catalogRoot()
     return self:request("GET", "/koreader/plugin/catalog/root")
 end
 
+function BookOrbitApi:requestAccess()
+    return self:request("GET", "/koreader/plugin/requests/access")
+end
+
+function BookOrbitApi:submitBookRequest(payload)
+    return self:request("POST", "/koreader/plugin/requests", payload)
+end
+
+function BookOrbitApi:submitBookRequestPair(payload)
+    return self:request("POST", "/koreader/plugin/requests/pairs", payload)
+end
+
+function BookOrbitApi:myBookRequests(params)
+    return self:request("GET", self:query("/koreader/plugin/requests", params))
+end
+
+function BookOrbitApi:bookRequest(id)
+    return self:request("GET", "/koreader/plugin/requests/" .. tostring(id))
+end
+
+function BookOrbitApi:cancelBookRequest(id)
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/cancel")
+end
+
+function BookOrbitApi:leaveBookRequest(id)
+    return self:request("DELETE", "/koreader/plugin/requests/" .. tostring(id) .. "/subscription")
+end
+
+function BookOrbitApi:requestReleases(id, refresh)
+    return self:request("GET", self:query("/koreader/plugin/requests/" .. tostring(id) .. "/releases", { refresh = refresh and "true" or "false" }))
+end
+
+function BookOrbitApi:searchBookRequestReleases(id, payload)
+    local body = { title = payload.title, authors = payload.authors, preferredFormats = payload.preferredFormats,
+        isbn = payload.isbn ~= "" and payload.isbn or rapidjson.null,
+        language = payload.language ~= "" and payload.language or rapidjson.null }
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/releases/search", body)
+end
+
+function BookOrbitApi:inspectBookRequestRelease(id, indexer_id, guid)
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/releases/inspect", { indexerId = indexer_id, releaseGuid = guid })
+end
+
+function BookOrbitApi:requestDownloadClients(id)
+    return self:request("GET", "/koreader/plugin/requests/" .. tostring(id) .. "/download-clients")
+end
+
+function BookOrbitApi:grabBookRequestRelease(id, payload)
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/grab", payload)
+end
+
+function BookOrbitApi:bookRequestReview(id)
+    return self:request("GET", "/koreader/plugin/requests/" .. tostring(id) .. "/review")
+end
+
+function BookOrbitApi:fileBookRequestImport(id)
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/force-file")
+end
+
+function BookOrbitApi:discardBookRequestImport(id)
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/discard-import")
+end
+
+function BookOrbitApi:selectBookRequestUnit(id, download_id, index)
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/downloads/" .. tostring(download_id) .. "/select-unit", { unitIndex = index })
+end
+
+function BookOrbitApi:cancelBookRequestDownload(id, download_id)
+    return self:request("POST", "/koreader/plugin/requests/" .. tostring(id) .. "/downloads/" .. tostring(download_id) .. "/cancel")
+end
+
 -- The dashboard body carries the stats, Continue reading and Discover the
 -- shelves are built from. Each configured shelf is then fetched through the
 -- ordinary catalog endpoints, so nothing here is section-aware.

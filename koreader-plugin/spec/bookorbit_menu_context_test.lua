@@ -206,4 +206,17 @@ for _, call in ipairs(sheet_calls) do table.insert(names, call[1]) end
 assertEqual(table.concat(names, ","), "openSettings,openSyncStatus,openSettings,customizeHome", "plugin actions reach the plugin")
 assertEqual(sheet_calls[3][3], "about", "Help & about opens settings on About")
 
+local requests_opened
+package.loaded["bookorbit_requests"] = { open = function(actual_plugin, actual_catalog)
+    assertEqual(actual_plugin, sheet_plugin, "requests receives the logged-in plugin")
+    assertEqual(actual_catalog, catalog, "requests reuses the active catalog client")
+    requests_opened = true
+end }
+local before_requests = closes
+sheet_plugin:onMenuSheetAction(page, catalog, { kind = "link", link = "requests" })
+assertEqual(closes, before_requests + 1, "Requests closes its menu sheet")
+assertEqual(requests_opened, nil, "Requests waits until the menu sheet closes")
+runTicks()
+assertEqual(requests_opened, true, "Requests is reachable from the BookOrbit menu")
+
 print("bookorbit_menu_context_test.lua: ok")

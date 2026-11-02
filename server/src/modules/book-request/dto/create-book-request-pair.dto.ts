@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsInt, IsOptional, IsString, IsUrl, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsInt, IsObject, IsOptional, IsString, IsUrl, MaxLength, Min, ValidateNested } from 'class-validator';
 import type { BookRequestPairHalfPayload } from '@bookorbit/types';
 
 import { BookRequestWorkDto } from './create-book-request.dto';
@@ -34,11 +34,13 @@ export class BookRequestPairHalfDto implements BookRequestPairHalfPayload {
 
 export class CreateBookRequestPairDto extends BookRequestWorkDto {
   @IsOptional()
+  @IsObject()
   @ValidateNested()
   @Type(() => BookRequestPairHalfDto)
   ebook?: BookRequestPairHalfDto;
 
   @IsOptional()
+  @IsObject()
   @ValidateNested()
   @Type(() => BookRequestPairHalfDto)
   audiobook?: BookRequestPairHalfDto;

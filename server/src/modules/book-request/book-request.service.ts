@@ -833,6 +833,12 @@ export class BookRequestService {
     return { ...destinations, comic: { ...NO_RESOLVED_REQUEST_DESTINATION } };
   }
 
+  async getRequesterLibraries(user: RequestUser) {
+    const ids = await this.libraryService.findAccessibleLibraryIds(user);
+    const names = await this.repo.findLibraryNames(ids);
+    return ids.filter((id) => names.has(id)).map((id) => ({ id, name: names.get(id)! }));
+  }
+
   async listMine(dto: ListBookRequestsDto, user: RequestUser): Promise<BookRequestPage> {
     const { items, total } = await this.repo.findAll({
       page: dto.page ?? 1,

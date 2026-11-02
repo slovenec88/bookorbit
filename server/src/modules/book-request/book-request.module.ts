@@ -167,6 +167,6 @@ import { RequestWatchdogService } from './fulfillment/request-watchdog.service';
     DownloadMonitorService,
     RequestWatchdogService,
   ],
-  exports: [BookRequestService],
+  exports: [BookRequestService, RequestFulfillmentService, DownloadClientConfigService, RequestImportService, RequestVerificationService],
 })
 export class BookRequestModule {}

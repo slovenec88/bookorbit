@@ -449,7 +449,10 @@ function MainMenu:onMenuSheetAction(page, catalog, action)
     elseif kind == "search" then
         after(function() if catalog then catalog:onSearchButtonTap() end end)
     elseif kind == "link" then
-        after(function() if catalog and catalog.boardOpenLink then catalog:boardOpenLink(action.link) end end)
+        after(function()
+            if action.link == "requests" and catalog then require("bookorbit_requests").open(self, catalog)
+            elseif catalog and catalog.boardOpenLink then catalog:boardOpenLink(action.link) end
+        end)
     elseif kind == "list-options" then
         after(function()
             if not catalog then return end

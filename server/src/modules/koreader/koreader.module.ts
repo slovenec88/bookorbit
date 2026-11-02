@@ -7,6 +7,7 @@ import { AnnotationModule } from '../annotation/annotation.module';
 import { AuthorsModule } from '../authors/authors.module';
 import { BookmarkModule } from '../bookmark/bookmark.module';
 import { BookModule } from '../book/book.module';
+import { BookRequestModule } from '../book-request/book-request.module';
 import { BrowseCountsModule } from '../browse-counts/browse-counts.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { OpdsModule } from '../opds/opds.module';
@@ -32,6 +33,9 @@ import { KoreaderPluginController } from './koreader-plugin.controller';
 import { KoreaderPluginRepository } from './koreader-plugin.repository';
 import { KoreaderPluginService } from './koreader-plugin.service';
 import { KoreaderRepository } from './koreader.repository';
+import { KoreaderRequestController } from './koreader-request.controller';
+import { KoreaderRequestFulfilmentController } from './koreader-request-fulfilment.controller';
+import { KoreaderRequestGuard } from './koreader-request.guard';
 import { KoreaderDeliveryService } from './koreader-delivery.service';
 import { KoreaderDeliveryController } from './koreader-delivery.controller';
 import { KoreaderService } from './koreader.service';
@@ -49,6 +53,7 @@ import { KoreaderSyncEstimateCleanupService } from './koreader-sync-estimate-cle
     AnnotationModule,
     AuthorsModule,
     BookModule,
+    BookRequestModule,
     BookmarkModule,
     BrowseCountsModule,
     DashboardModule,
@@ -57,13 +62,21 @@ import { KoreaderSyncEstimateCleanupService } from './koreader-sync-estimate-cle
     ReadingSessionModule,
     RecommendationModule,
   ],
-  controllers: [KoreaderDeliveryController, KoreaderController, KoreaderPluginController, KoreaderCatalogController],
+  controllers: [
+    KoreaderDeliveryController,
+    KoreaderController,
+    KoreaderPluginController,
+    KoreaderCatalogController,
+    KoreaderRequestController,
+    KoreaderRequestFulfilmentController,
+  ],
   providers: [
     KoreaderDeliveryService,
     KoreaderService,
     KoreaderHashLinkService,
     KoreaderRepository,
     KoreaderAuthGuard,
+    KoreaderRequestGuard,
     KoreaderCatalogService,
     KoreaderPackageService,
     KoreaderChapterService,
