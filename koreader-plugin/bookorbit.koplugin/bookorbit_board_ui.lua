@@ -55,16 +55,37 @@ local function isRGB(c)
 end
 BoardUI.isRGB = isRGB
 
-local function paintBorder(bb, x, y, w, h, bw, c, r)
+-- Android's C blitter defers inversion until display, but RGB corners use
+-- Lua's pixel painter. Give both paths the same view of the shared pixels.
+local function rgbPaintBuffer(bb)
+    if bb:getInverse() == 1 and bb:canUseCbb() then
+        local view = bb:viewport(0, 0, bb:getWidth(), bb:getHeight())
+        view:setInverse(0)
+        return view
+    end
+    return bb
+end
+
+local BaseFrameContainer = FrameContainer
+FrameContainer = BaseFrameContainer:extend{}
+
+function FrameContainer:paintTo(bb, x, y)
+    if isRGB(self.background) then bb = rgbPaintBuffer(bb) end
+    BaseFrameContainer.paintTo(self, bb, x, y)
+end
+
+local function paintBorder(bb, x, y, w, h, bw, c, r, anti_alias)
     if isRGB(c) and bb.paintBorderRGB32 then
-        bb:paintBorderRGB32(x, y, w, h, bw, c, r)
+        bb = rgbPaintBuffer(bb)
+        bb:paintBorderRGB32(x, y, w, h, bw, c, r, anti_alias)
     else
-        bb:paintBorder(x, y, w, h, bw, c, r)
+        bb:paintBorder(x, y, w, h, bw, c, r, anti_alias)
     end
 end
 
 local function paintRoundedRect(bb, x, y, w, h, c, r)
     if isRGB(c) and bb.paintRoundedRectRGB32 then
+        bb = rgbPaintBuffer(bb)
         bb:paintRoundedRectRGB32(x, y, w, h, c, r)
     else
         bb:paintRoundedRect(x, y, w, h, c, r)
@@ -885,10 +906,8 @@ function CellGrid:paintTo(bb, x, y)
             bb:paintRoundedRect(x + cell.x - ring, y + cell.y - ring, s + 2 * ring, s + 2 * ring, INK.black, r + ring)
             bb:paintRoundedRect(x + cell.x - gap, y + cell.y - gap, s + 2 * gap, s + 2 * gap, INK.white, r + gap)
         end
-        if cell.border and isRGB(cell.col) and bb.paintBorderRGB32 then
-            bb:paintBorderRGB32(x + cell.x, y + cell.y, s, s, cell.border, cell.col, r, true)
-        elseif cell.border then
-            bb:paintBorder(x + cell.x, y + cell.y, s, s, cell.border, cell.col, r, true)
+        if cell.border then
+            paintBorder(bb, x + cell.x, y + cell.y, s, s, cell.border, cell.col, r, true)
         else
             paintRoundedRect(bb, x + cell.x, y + cell.y, s, s, cell.col, r)
         end
